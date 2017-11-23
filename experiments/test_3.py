@@ -7,8 +7,6 @@ import torch.nn.functional as F
 from torch.nn import init
 from torch.nn._functions.rnn import Recurrent, StackedRNN
 import os
-import torchwordemb
-
 
 class CNN(nn.Module):
     def __init__(self, emb_size, pad_len, classes):
@@ -20,16 +18,20 @@ class CNN(nn.Module):
             nn.Conv2d(1, 16, kernel_size=3, padding=1),
             nn.BatchNorm2d(16),
             nn.ReLU(),
-            nn.MaxPool2d(2))
+            nn.MaxPool2d(2)
+        )
 
         self.fc = nn.Linear(16*int(self.emb_size/2)*int(self.pad_len/2), self.classes)
-        self.sm = nn.Softmax()
+        #self.fc = nn.Linear(16 * int(self.emb_size) * int(self.pad_len), self.classes)
+        self.sm = nn.LogSoftmax()
 
     def forward(self, x):
         out = self.layer1(x)
-        out = out.view(out.size(0), -1)
+        out = out.view(1, -1) #out.size(0), -1)
+        
         out = self.fc(out)
-
+        print('\tFC OUTPUT:', out.data.numpy().flatten())
+        
         out = self.sm(out)
         return out
 
