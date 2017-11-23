@@ -17,19 +17,43 @@ class CNN(nn.Module):
         self.pad_len = pad_len
         self.classes = classes
         self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=3, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
+            nn.Conv2d(1, 16, kernel_size=(100, 3), padding=1)
+            #nn.BatchNorm2d(16),
+            #nn.ReLU(),
+            #nn.MaxPool2d(kernel_size=2)
+            )
 
-        self.fc = nn.Linear(16*int(self.emb_size/2)*int(self.pad_len/2), self.classes)
-        self.sm = nn.Softmax()
+        # self.conv = nn.Conv2d(1, 16, kernel_size=(300, 3), padding=1),
+        # self.norm = nn.BatchNorm2d(16),
+        # self.relu = nn.ReLU(),
+        # self.max_pool = nn.MaxPool2d(2)
+
+
+        #self.fc = nn.Linear(16*int(self.pad_len), self.classes)
+        self.fc = nn.Linear(1632, self.classes)
+        self.sm = nn.LogSoftmax()
 
     def forward(self, x):
-        out = self.layer1(x)
-        out = out.view(out.size(0), -1)
-        out = self.fc(out)
+        # out = self.conv(x)
+        # print("after conv")
+        # print(out)
+        #
+        # out = self.relu(out)
+        # print("after relu")
+        # print(out)
+        # out = self.max_pool(out)
+        # print("after max pool")
+        # print(out)
 
+
+        out = self.layer1(x)
+        #print("layer1 ", out.data)
+
+        out = out.view(1, -1)
+        #print(out)
+        out = self.fc(out)
+        #print("after linear")
+        #print(out)
         out = self.sm(out)
         return out
 

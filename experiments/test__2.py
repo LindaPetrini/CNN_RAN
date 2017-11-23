@@ -11,6 +11,7 @@ from torch.nn._functions.rnn import Recurrent, StackedRNN
 import torchwordemb
 from test_3 import CNN
 import numpy as np
+from sklearn.utils import shuffle
 
 
 #vocab, vec = torchwordemb.load_word2vec_bin("./GoogleNews-vectors-negative300.bin")
@@ -54,7 +55,7 @@ vocab, vec = {}, {}
 
 batch_size = 10
 window = 3
-emb_size = 300
+emb_size = 100
 classes = 3
 
 for ind, sentence in enumerate(train_data):
@@ -68,7 +69,7 @@ cnn = CNN(emb_size, pad_len, classes)
 
 optimizer = torch.optim.Adam(cnn.parameters(), lr=0.01)
 loss = nn.NLLLoss()
-
+#loss = nn.CrossEntropyLoss()
 
 
 for ind, sentence in enumerate(train_data):
@@ -76,23 +77,58 @@ for ind, sentence in enumerate(train_data):
     for k, word in enumerate(sentence):
         if word in vocab:
             emb_mat[:, k] = vec[vocab[word]]
-
         else:
             emb_mat[:, k] = np.random.normal(0, 1, emb_size)
 
     inp = Variable(torch.Tensor(emb_mat).view(1, 1, emb_size, -1))
     out = cnn.forward(inp)
-    print("\ntweet ", ind)
     expected_targ = Variable(torch.LongTensor([train_targets[ind]+1]))
-    print(expected_targ)
-    print(out)
+
     optimizer.zero_grad()
     error = loss(out, expected_targ)
 
-
     error.backward()
     optimizer.step()
+
+    # for param in cnn.parameters():
+    #     print("data: ", param.data, "\n grad: ", param.grad.data)
+
+
+
+    print("\ntweet ", ind)
+    print("expected targ: ", expected_targ.data)
+    #print("output ", nn.functional.softmax(out.data))
+    print("output ", out.data)
     print("error ", error)
+
+for i in range(4):
+    print("**************************************************************")
+    train_data, train_targets= shuffle(train_data, train_targets, random_state=42)
+    for ind, sentence in enumerate(train_data):
+        emb_mat = np.zeros((emb_size, pad_len))
+        for k, word in enumerate(sentence):
+            if word in vocab:
+                emb_mat[:, k] = vec[vocab[word]]
+
+            else:
+                emb_mat[:, k] = np.random.normal(0, 1, emb_size)
+
+        inp = Variable(torch.Tensor(emb_mat).view(1, 1, emb_size, -1))
+        out = cnn.forward(inp)
+
+        expected_targ = Variable(torch.LongTensor([train_targets[ind] + 1]))
+
+        optimizer.zero_grad()
+        error = loss(out, expected_targ)
+
+        error.backward()
+        optimizer.step()
+
+        if ind % 100 == 0:
+            print("\ntweet ", ind)
+            print("expected targ: ", expected_targ.data)
+            print("output ", nn.functional.softmax(out.data))
+            print("error ", error)
 
 
 
