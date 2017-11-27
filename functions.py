@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import torchwordemb
 import numpy as np
 import gc
+import string
 
 
 
@@ -47,7 +48,7 @@ class CNN(nn.Module):
 
     def create_emb_matrix(self, vocaboulary):
         print('importing embeddings')
-        vocab, vec = torchwordemb.load_word2vec_bin("./GoogleNews-vectors-negative300.bin")
+        vocab, vec = torchwordemb.load_word2vec_bin("./datasets/GoogleNews-vectors-negative300.bin")
         print('imported embeddings')
 
         emb_mat = np.zeros((self.vocab_size + 1, self.emb_size))
@@ -95,13 +96,17 @@ def read_data(fname, pad_len=50, padding=True):
     '''
     train_data = []
     train_targets = []
+    printable = set(string.printable)
 
     with open(fname) as f:
         f.readline()
         for line in f.readlines():
             train_target, train_sentence = line.strip().split(None, 1)
+            train_sentence = "".join(filter(lambda x: x in printable, train_sentence))
             train_data.append(train_sentence)
             train_targets.append(train_target)
+
+            
             # print(train_target, train_sentence)
     #         if line[1] == 'positive':
     #             train_targets.append(2)
@@ -112,25 +117,42 @@ def read_data(fname, pad_len=50, padding=True):
 
     tknzr = TweetTokenizer()
     max_len = 0
-
+    longest_sent = ""
+    longest_ind = -1
+    train_data_filter = []
+    
     for ind, tmp in enumerate(train_data):
         #tmp = sentence.strip().split(None, 1)[1]
         print(ind)
         tmp = re.sub("https?:?//[\w/.]+", "<URL>", tmp)
         tmp = find_emoticons(tmp)
-        tmp = re.sub("[\-_#@('s ):.]", " ", tmp)
-        train_data[ind] = tknzr.tokenize(tmp.lower())
-        max_len = max(max_len, len(train_data[ind]))
+        tmp = re.sub('[\-_#@()",;:.]', " ", tmp)
+        tmp.replace("?","")
+        tmp.replace("'s","")
+        tmp.replace("&quot"," ")
+        tmp.replace("&amp"," ")
+        tkn = tknzr.tokenize(tmp.lower())
+        # print(tkn)
+        if len(tkn) <= 40:
+            train_data_filter.append(tkn)
+            if len(tkn) > max_len:
+                print(tkn)
+                longest_sent = tmp
+                longest_ind = len(train_data_filter)-1
+            max_len = max(max_len, len(train_data_filter[-1]))
 
-    actual_pad = max(max_len, pad_len)
+    actual_pad = max_len #max(max_len, pad_len)
+    print("actual pad", actual_pad)
+    print("longest sent ", longest_sent)
+    print("longest ind", longest_ind)
     if padding:
-        for sentence in train_data:
+        for sentence in train_data_filter:
             assert len(sentence) <= actual_pad, "tweet longer than padding"
 
             while len(sentence) < actual_pad:
                 sentence.append("<PAD>")
 
-    return train_data, train_targets, actual_pad
+    return train_data_filter, train_targets, actual_pad
 
 
 def find_emoticons(sentence):

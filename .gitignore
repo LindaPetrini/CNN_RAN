@@ -1,4 +1,6 @@
 .idea/
 .git/
 __pycache__/
-datasets/
+datasets/*.csv
+datasets/*.bin
+datasets/*.txt
