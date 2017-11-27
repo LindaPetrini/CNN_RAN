@@ -86,26 +86,36 @@ class CNN(nn.Module):
 
 
 def read_data(fname, pad_len=50, padding=True):
+    '''
+    ItemID,Sentiment,SentimentSource,SentimentText
+    :param fname:
+    :param pad_len:
+    :param padding:
+    :return:
+    '''
     train_data = []
     train_targets = []
 
     with open(fname) as f:
         f.readline()
         for line in f.readlines():
-            train_data.append(line)
-            line = line.strip().split()
-            if line[1] == 'positive':
-                train_targets.append(2)
-            elif line[1] == 'negative':
-                train_targets.append(0)
-            else:
-                train_targets.append(1)
+            train_target, train_sentence = line.strip().split(None, 1)
+            train_data.append(train_sentence)
+            train_targets.append(train_target)
+            # print(train_target, train_sentence)
+    #         if line[1] == 'positive':
+    #             train_targets.append(2)
+    #         elif line[1] == 'negative':
+    #             train_targets.append(0)
+    #         else:
+    #             train_targets.append(1)
 
     tknzr = TweetTokenizer()
     max_len = 0
 
-    for ind, sentence in enumerate(train_data):
-        tmp = sentence.strip().split(None, 2)[2]
+    for ind, tmp in enumerate(train_data):
+        #tmp = sentence.strip().split(None, 1)[1]
+        print(ind)
         tmp = re.sub("https?:?//[\w/.]+", "<URL>", tmp)
         tmp = find_emoticons(tmp)
         tmp = re.sub("[\-_#@('s ):.]", " ", tmp)

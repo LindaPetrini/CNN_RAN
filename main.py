@@ -12,11 +12,13 @@ import matplotlib.pyplot as plt
 
 
 
-train_fname = './2017_English_final/GOLD/Subtask_A/twitter-2016train-A.txt'
-test_fname = './2017_English_final/GOLD/Subtask_A/twitter-2016test-A.txt'
+train_fname = './emb_dataset.txt'
+#test_fname = './2017_English_final/GOLD/Subtask_A/twitter-2016test-A.txt'
 
 print("reading data")
 train_data, train_targets, pad_len = fun.read_data(train_fname)
+print("train ", train_data[:100])
+print("targets ", train_targets[:100])
 #test_data, test_targets, test_pad_len = fun.read_data(test_fname)
 
 #assert pad_len == test_pad_len, "tweet length not matching"
@@ -25,6 +27,7 @@ print("\nnumber train data: ", len(train_data))
 #print("number test data: ", len(test_data))
 print("padding length: ", pad_len)
 
+input("Enter to Continue...")
 emb_size = 300
 classes = 3
 
