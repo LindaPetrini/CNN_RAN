@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 train_fname = './datasets/emb_preprocessed.txt'
 #test_fname = './2017_English_final/GOLD/Subtask_A/twitter-2016test-A.txt'
 
-print("reading data")
+print("Reading data...")
 train_data, train_targets, pad_len = fun.read_data(train_fname)
 #test_data, test_targets, test_pad_len = fun.read_data(test_fname)
 
@@ -26,15 +26,15 @@ print("\nnumber train data: ", len(train_data))
 print("padding length: ", pad_len)
 
 
-input("Enter to Continue...")
+input("Enter to Sample Dataset...")
 
 print("train ", train_data[:100])
 print("targets ", train_targets[:100])
 
-input("Enter to Continue...")
+input("Enter to Continue initializing the model...")
 
 emb_size = 300
-classes = 3
+classes = 2
 
 
 unique_words = [word for sentence in train_data for word in sentence]
