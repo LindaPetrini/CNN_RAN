@@ -5,6 +5,22 @@ from torch.autograd import Variable
 import numpy as np
 from sklearn.utils import shuffle
 import matplotlib.pyplot as plt
+import argparse
+
+
+parser = argparse.ArgumentParser(description='CNN')
+parser.add_argument('--initial', type=str, choices=["google", "prev"], default="google",
+                    help='choose initialisation(prev, google')
+parser.add_argument('--epochs', type=int, default=10,
+                    help='number of epochs')
+parser.add_argument('--lr', type=float, default=0.001,
+                    help='learning rate')
+parser.add_argument('--plot', action='store_true',
+                    help='plot loss')
+parser.add_argument('--save', type=str, default='trained_emb.txt',
+                    help='path to save the final model')
+
+args = parser.parse_args()
 
 train_fname = './datasets/emb_preprocessed.txt'
 
@@ -33,17 +49,18 @@ word2ind = fun.create_vocab(unique_words)
 
 cnn = fun.CNN(emb_size, pad_len, classes, vocab_size)
 
-#cnn.init_emb(word2ind)
-cnn.init_from_txt("trained_emb.txt", word2ind)
+if args.initial == "google":
+    cnn.init_emb(word2ind)
+else:
+    cnn.init_from_txt("trained_emb.txt", word2ind)
 
-optimizer = torch.optim.Adam(cnn.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(cnn.parameters(), lr=args.lr)
 
 loss = nn.NLLLoss()
 
-epochs = 100
 errors = []
 
-for it in range(epochs):
+for it in range(args.epochs):
     train_data, train_targets = shuffle(train_data, train_targets)
 
     print("*"*100)
@@ -72,7 +89,9 @@ for it in range(epochs):
     print("Errors: ", errors)
 
 print("errors:", errors)
-plt.plot(range(epochs), errors)
-plt.show()
+if args.plot:
+    plt.plot(range(args.epochs), errors)
+    plt.show()
 
-cnn.emb_to_txt("trained_emb.txt", word2ind)
+if args.save:
+    cnn.emb_to_txt(args.save, word2ind)
