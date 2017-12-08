@@ -16,7 +16,7 @@ def read_data(fname, oname, padding=True):
     train_targets = []
     printable = set(string.printable)
 
-    with open(fname) as f:
+    with open(fname, encoding='utf-8') as f:
         f.readline()
         for line in f.readlines():
             train_target, train_sentence = line.strip().split(None, 1)
@@ -33,7 +33,7 @@ def read_data(fname, oname, padding=True):
     #         else:
     #             train_targets.append(1)
 
-    tknzr = TweetTokenizer()
+    tknzr = TweetTokenizer(reduce_len=True)
     max_len = 0
     longest_sent = ""
     longest_ind = -1
@@ -42,16 +42,18 @@ def read_data(fname, oname, padding=True):
     
     for ind, tmp in enumerate(train_data):
         #tmp = sentence.strip().split(None, 1)[1]
-        print(ind)
+        #print(ind)
+
         tmp = re.sub("https?:?//[\w/.]+", "<URL>", tmp)
         tmp = find_emoticons(tmp)
-        tmp = re.sub('[\-_"#@(),!*;:.]', " ", tmp)
-        tmp.replace("?","")
-        tmp.replace("&","")
-        tmp.replace("'s","")
-        tmp.replace("&quot","")
-        tmp.replace("&amp","")
-        tmp.replace("\t"," ")
+        tmp = re.sub('[\-_"#@(),!*;:.\[\]~]', " ", tmp)
+        tmp = tmp.replace("?", "")
+        tmp = tmp.replace("&", "")
+        tmp = tmp.replace("'s", "")
+        tmp = tmp.replace("&quot", "")
+        tmp = tmp.replace("&amp", "")
+        tmp = tmp.replace("'", " ")
+        tmp = tmp.replace("\t", " ")
         tkn = tknzr.tokenize(tmp.lower())
         # print(tkn)
         if len(tkn) <= MAX_SIZE:
@@ -72,7 +74,7 @@ def read_data(fname, oname, padding=True):
             assert len(sentence) <= actual_pad, "tweet longer than padding"
 
             while len(sentence) < actual_pad:
-                sentence.append("<PAD>")
+                sentence.append("<pad>")
 
     #assert len(train_data_filter) == len(train_targets), "number of targets differ number of tweets"
     #assert len(train_data_filter[0]) == actual_pad, "actual_pad isn't respected on first element"
@@ -86,29 +88,14 @@ def read_data(fname, oname, padding=True):
 
 
 def find_emoticons(sentence):
-    smile_emoticons_str = r"""
-        (?:
-            [:=;] # Eyes
-            [oO\-]? # Nose (optional)
-            [D\)\]] # Mouth
-        )"""
-
-    sad_emoticons_str = r"""
-        (?:
-            [:=;] # Eyes
-            [oO\-']? # Nose (optional)
-            [\(\[\|] # Mouth
-        )"""
-    funny_emoticons_str = r"""
-        (?:
-            [:=;] # Eyes
-            [oO\-]? # Nose (optional)
-            [OpP] # Mouth
-        )"""
+    smile_emoticons_str = r"""(?:[:=;][oO\-]?[D\)\]])"""
+    sad_emoticons_str = r"""(?:[:=;][oO\-']?[\(\[\|])"""
+    funny_emoticons_str = r"""(?:[:=;@][oO\-]?[Oo0pP])"""
     sentence = re.sub(smile_emoticons_str, "<smile>", sentence)
     sentence = re.sub(sad_emoticons_str, "<sad>", sentence)
     sentence = re.sub(funny_emoticons_str, "<funny>", sentence)
 
     return sentence
 
-read_data("./emb_dataset.txt","./emb_preprocessed.txt")
+#read_data("./emb_dataset.txt","./emb_preprocessed.txt")
+read_data("./dataset.txt","preocessed.txt")

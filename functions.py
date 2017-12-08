@@ -1,14 +1,9 @@
-from nltk.tokenize import TweetTokenizer
-import re
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torchwordemb
 import numpy as np
 import gc
-import string
-
-
 
 
 class CNN(nn.Module):
@@ -21,7 +16,7 @@ class CNN(nn.Module):
         self.vocab_size = vocab_size
         self.window = 3
         self.channels = 16
-        self.embeddings = nn.Embedding(self.vocab_size + 1, self.emb_size)
+        self.embeddings = nn.Embedding(self.vocab_size, self.emb_size)
 
         self.layer1 = nn.Sequential(
             nn.Conv2d(1, self.channels, kernel_size=(self.emb_size, self.window), padding=1),
@@ -45,22 +40,27 @@ class CNN(nn.Module):
         emb_mat = self.create_emb_matrix(vocaboulary)
         self.embeddings.weight.data.copy_(torch.from_numpy(emb_mat))
 
+    def init_from_txt(self, fname, vocaboulary):
+        emb_mat =  np.zeros((self.vocab_size, self.emb_size))
+        with open(fname, 'r', encoding='utf-8') as f:
+            for l in f:
+                word, vec = l.split("\t")
+                vec = vec.split(",")
+                emb_mat[vocaboulary[word]] = np.asarray(vec)
+        self.embeddings.weight.data.copy_(torch.from_numpy(emb_mat))
 
     def create_emb_matrix(self, vocaboulary):
         print('importing embeddings')
         vocab, vec = torchwordemb.load_word2vec_bin("./datasets/GoogleNews-vectors-negative300.bin")
         print('imported embeddings')
 
-        emb_mat = np.zeros((self.vocab_size + 1, self.emb_size))
+        emb_mat = np.zeros((self.vocab_size, self.emb_size))
 
         for word in vocaboulary.keys():
             if word in vocab:
                 emb_mat[vocaboulary[word]] = vec[vocab[word]].numpy()
             else:
                 emb_mat[vocaboulary[word]] = np.random.normal(0, 1, self.emb_size)
-
-        #hypotetically, the one for <unk>
-        emb_mat[-1] = np.random.normal(0, 1, self.emb_size)
 
         print('train matrices built')
 
@@ -74,116 +74,34 @@ class CNN(nn.Module):
 
     def encode_words(self, sentence, word2ind):
         inp = np.asarray([word2ind[word] for word in sentence])
-        #inp.reshape((1, 1, self.pad_len))
         inp = Variable(torch.LongTensor(inp))
         return inp
 
+    def emb_to_txt(self, oname: str, word2ind: dict):
+
+        with open(oname, "w") as o:
+            o.write("word\tembedding")
+            for word in word2ind.keys():
+                emb = self.embeddings.weight.data.numpy()[word2ind[word]]
+                emb = [str(el) for el in emb]
+                o.write(str(word) + "\t" + ",".join(emb) + "\n")
 
 
-
-
-
-
-
-
-def read_data(fname, pad_len=50, padding=True):
-    '''
-    ItemID,Sentiment,SentimentSource,SentimentText
-    :param fname:
-    :param pad_len:
-    :param padding:
-    :return:
-    '''
+def read_data(fname):
     train_data = []
     train_targets = []
-    tweet_len = -1
 
     with open(fname) as f:
         f.readline()
         for line in f.readlines():
             train_target, train_sentence = line.strip().split(None, 1)
-            train_data.append(train_sentence)
-            train_targets.append(train_target)
-    
-    tweet_len = len(train_data[-1].strip().split())
+            train_data.append(train_sentence.split(" "))
+            train_targets.append(int(train_target))
+
+    tweet_len = len(train_data[-1])
     
     return train_data, train_targets, tweet_len
-    
 
-    #
-    #         # print(train_target, train_sentence)
-    # #         if line[1] == 'positive':
-    # #             train_targets.append(2)
-    # #         elif line[1] == 'negative':
-    # #             train_targets.append(0)
-    # #         else:
-    # #             train_targets.append(1)
-    #
-    # tknzr = TweetTokenizer()
-    # max_len = 0
-    # longest_sent = ""
-    # longest_ind = -1
-    # train_data_filter = []
-    #
-    # for ind, tmp in enumerate(train_data):
-    #     #tmp = sentence.strip().split(None, 1)[1]
-    #     print(ind)
-    #     tmp = re.sub("https?:?//[\w/.]+", "<URL>", tmp)
-    #     tmp = find_emoticons(tmp)
-    #     tmp = re.sub('[\-_#@()",;:.]', " ", tmp)
-    #     tmp.replace("?","")
-    #     tmp.replace("'s","")
-    #     tmp.replace("&quot"," ")
-    #     tmp.replace("&amp"," ")
-    #     tkn = tknzr.tokenize(tmp.lower())
-    #     # print(tkn)
-    #     if len(tkn) <= 40:
-    #         train_data_filter.append(tkn)
-    #         if len(tkn) > max_len:
-    #             print(tkn)
-    #             longest_sent = tmp
-    #             longest_ind = len(train_data_filter)-1
-    #         max_len = max(max_len, len(train_data_filter[-1]))
-    #
-    # actual_pad = max_len #max(max_len, pad_len)
-    # print("actual pad", actual_pad)
-    # print("longest sent ", longest_sent)
-    # print("longest ind", longest_ind)
-    # if padding:
-    #     for sentence in train_data_filter:
-    #         assert len(sentence) <= actual_pad, "tweet longer than padding"
-    #
-    #         while len(sentence) < actual_pad:
-    #             sentence.append("<PAD>")
-    #
-    # return train_data_filter, train_targets, actual_pad
-
-
-def find_emoticons(sentence):
-    smile_emoticons_str = r"""
-        (?:
-            [:=;] # Eyes
-            [oO\-]? # Nose (optional)
-            [D\)\]] # Mouth
-        )"""
-
-    sad_emoticons_str = r"""
-        (?:
-            [:=;] # Eyes
-            [oO\-']? # Nose (optional)
-            [\(\[\|] # Mouth
-        )"""
-    funny_emoticons_str = r"""
-        (?:
-            [:=;] # Eyes
-            [oO\-]? # Nose (optional)
-            [OpP] # Mouth
-        )"""
-    sentence = re.sub(smile_emoticons_str, "<smile>", sentence)
-    sentence = re.sub(sad_emoticons_str, "<sad>", sentence)
-    sentence = re.sub(funny_emoticons_str, "<funny>", sentence)
-
-    return sentence
 
 def create_vocab(vocab_list):
     vocab = {}
