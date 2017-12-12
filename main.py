@@ -19,8 +19,18 @@ parser.add_argument('--plot', action='store_true',
                     help='plot loss')
 parser.add_argument('--save', type=str, default='trained_emb.txt',
                     help='path to save the final model')
+parser.add_argument('--cuda', action='store_true',
+                    help='use CUDA')
+parser.add_argument('--seed', type=int, default=1111,
+                    help='random seed')
 
 args = parser.parse_args()
+
+if torch.cuda.is_available():
+    if not args.cuda:
+        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+    else:
+        torch.cuda.manual_seed(args.seed)
 
 train_fname = './datasets/emb_preprocessed.txt'
 
@@ -48,6 +58,9 @@ vocab_size = len(unique_words)
 word2ind = fun.create_vocab(unique_words)
 
 cnn = fun.CNN(emb_size, pad_len, classes, vocab_size)
+
+if args.cuda:
+    cnn.cuda()
 
 if args.initial == "google":
     cnn.init_emb(word2ind)
