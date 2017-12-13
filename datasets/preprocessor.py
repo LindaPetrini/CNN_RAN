@@ -42,7 +42,7 @@ def read_data(fname, oname, padding=True):
     
     for ind, tmp in enumerate(train_data):
         #tmp = sentence.strip().split(None, 1)[1]
-        #print(ind)
+        print(ind)
 
         tmp = re.sub("https?:?//[\w/.]+", "<URL>", tmp)
         tmp = find_emoticons(tmp)
@@ -60,14 +60,14 @@ def read_data(fname, oname, padding=True):
             train_data_filter.append(tkn)
             train_targets_filter.append(train_targets[ind])
             if len(tkn) > max_len:
-                print(tkn)
+                # print(tkn)
                 longest_sent = tmp
                 longest_ind = len(train_data_filter)-1
             max_len = max(max_len, len(train_data_filter[-1]))
 
     actual_pad = max_len #max(max_len, pad_len)
     print("actual pad", actual_pad)
-    print("longest sent ", longest_sent)
+    # print("longest sent ", longest_sent)
     print("longest ind", longest_ind)
     if padding:
         for sentence in train_data_filter:
@@ -98,4 +98,4 @@ def find_emoticons(sentence):
     return sentence
 
 #read_data("./emb_dataset.txt","./emb_preprocessed.txt")
-read_data("./dataset.txt","preocessed.txt")
+read_data("./emb_dataset.txt","preprocessed.txt")

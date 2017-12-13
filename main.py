@@ -82,22 +82,22 @@ for it in range(args.epochs):
     total_err = 0
 
     for index, sentence in enumerate(train_data):
-        inp = cnn.encode_words(sentence, word2ind)
+        inp = cnn.encode_words(sentence, word2ind, is_cuda=True) if args.cuda else cnn.encode_words(sentence, word2ind)
         out = cnn.forward(inp)
         target = train_targets[index]
-        expected_targ = Variable(torch.LongTensor([target]))
+        expected_targ = Variable(torch.cuda.LongTensor([target])) if args.cuda else Variable(torch.LongTensor([target]))
 
         optimizer.zero_grad()
 
         error = loss(out, expected_targ)
         error.backward()
         optimizer.step()
-        total_err += error.data.numpy()
+        total_err += error.data.cpu().numpy() if args.cuda else error.data.numpy()
 
         if index % 20 == 0:
-            print('\tExpected - Predicted:', target, np.argmax(out.data.numpy().flatten()))
+            print('\tExpected - Predicted:', target, np.argmax(out.data.cpu().numpy().flatten()) if args.cuda else np.argmax(out.data.numpy().flatten()))
             print("tweet ", index)
-            print("\tError ", error.data.numpy().flatten())
+            print("\tError ", error.data.cpu().numpy().flatten() if args.cuda else error.data.numpy().flatten())
     errors += [total_err / len(train_data)]
     print("Errors: ", errors)
 

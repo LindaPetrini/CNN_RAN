@@ -56,7 +56,9 @@ class CNN(nn.Module):
 
         emb_mat = np.zeros((self.vocab_size, self.emb_size))
 
-        for word in vocaboulary.keys():
+        for i, word in enumerate(vocaboulary.keys()):
+            if i % 1000 == 0:
+                print("Reading word ", i, "/", len(vocaboulary))
             if word in vocab:
                 emb_mat[vocaboulary[word]] = vec[vocab[word]].numpy()
             else:
@@ -72,9 +74,9 @@ class CNN(nn.Module):
 
         return emb_mat
 
-    def encode_words(self, sentence, word2ind):
+    def encode_words(self, sentence, word2ind, is_cuda=False):
         inp = np.asarray([word2ind[word] for word in sentence])
-        inp = Variable(torch.LongTensor(inp))
+        inp = Variable(torch.cuda.LongTensor(inp.tolist())) if is_cuda else Variable(torch.LongTensor(inp))
         return inp
 
     def emb_to_txt(self, oname: str, word2ind: dict):
