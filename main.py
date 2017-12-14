@@ -32,10 +32,17 @@ if torch.cuda.is_available():
     else:
         torch.cuda.manual_seed(args.seed)
 
-train_fname = './datasets/emb_preprocessed.txt'
+train_fname = './datasets/preprocessed.txt'#'./datasets/emb_preprocessed.txt'
 
 print("Reading data...")
 train_data, train_targets, pad_len = fun.read_data(train_fname)
+
+# train_data = train_data[3000:6001]
+# train_targets = train_targets[3000:6001]
+
+max_len = max(train_data, key=lambda x: len(x))
+print('max =', max_len)
+print('max len=', len(max_len))
 
 
 print("\nnumber train data: ", len(train_data))
@@ -82,18 +89,23 @@ for it in range(args.epochs):
     total_err = 0
 
     for index, sentence in enumerate(train_data):
-        inp = cnn.encode_words(sentence, word2ind, is_cuda=True) if args.cuda else cnn.encode_words(sentence, word2ind)
-        out = cnn.forward(inp)
-        target = train_targets[index]
-        expected_targ = Variable(torch.cuda.LongTensor([target])) if args.cuda else Variable(torch.LongTensor([target]))
-
-        optimizer.zero_grad()
-
-        error = loss(out, expected_targ)
-        error.backward()
-        optimizer.step()
-        total_err += error.data.cpu().numpy() if args.cuda else error.data.numpy()
-
+        print(index, ':', len(sentence))
+        try:
+            inp = cnn.encode_words(sentence, word2ind, is_cuda=True) if args.cuda else cnn.encode_words(sentence, word2ind)
+            out = cnn.forward(inp)
+            target = train_targets[index]
+            expected_targ = Variable(torch.cuda.LongTensor([target])) if args.cuda else Variable(torch.LongTensor([target]))
+    
+            optimizer.zero_grad()
+    
+            error = loss(out, expected_targ)
+            error.backward()
+            optimizer.step()
+            total_err += error.data.cpu().numpy() if args.cuda else error.data.numpy()
+        except:
+            print(sentence)
+            print(inp)
+            raise
         if index % 20 == 0:
             print('\tExpected - Predicted:', target, np.argmax(out.data.cpu().numpy().flatten()) if args.cuda else np.argmax(out.data.numpy().flatten()))
             print("tweet ", index)

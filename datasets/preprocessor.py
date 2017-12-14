@@ -3,6 +3,16 @@ import string
 from nltk.tokenize import TweetTokenizer
 
 
+
+numbers_re = re.compile(r'[+-]?(\d*\.\d+|\d+)')
+urls_re = re.compile(r"https?:?//[\w/.]+")
+stopwords_re = re.compile(r'[\-_"#@(),!*;:.\[\]~]')
+whitespaces_re = re.compile(' +')
+
+smile_re = re.compile(r'(?:[:=;][oO\-]?[D\)\]])')
+sad_re = re.compile(r"(?:[:=;][oO\-']?[\(\[\|])")
+funny_re = re.compile(r'(?:[:=;@][oO\-]?[Oo0pP])')
+
 def read_data(fname, oname, padding=True):
     '''
     ItemID,Sentiment,SentimentSource,SentimentText
@@ -44,9 +54,10 @@ def read_data(fname, oname, padding=True):
         #tmp = sentence.strip().split(None, 1)[1]
         print(ind)
 
-        tmp = re.sub("https?:?//[\w/.]+", "<URL>", tmp)
+        tmp = urls_re.sub("<URL>", tmp)
         tmp = find_emoticons(tmp)
-        tmp = re.sub('[\-_"#@(),!*;:.\[\]~]', " ", tmp)
+        tmp = stopwords_re.sub(" ", tmp)
+        tmp = numbers_re.sub("<num>", tmp)
         tmp = tmp.replace("?", "")
         tmp = tmp.replace("&", "")
         tmp = tmp.replace("'s", "")
@@ -54,6 +65,7 @@ def read_data(fname, oname, padding=True):
         tmp = tmp.replace("&amp", "")
         tmp = tmp.replace("'", " ")
         tmp = tmp.replace("\t", " ")
+        tmp = whitespaces_re.sub(' ', tmp)
         tkn = tknzr.tokenize(tmp.lower())
         # print(tkn)
         if len(tkn) <= MAX_SIZE:
@@ -76,24 +88,30 @@ def read_data(fname, oname, padding=True):
             while len(sentence) < actual_pad:
                 sentence.append("<pad>")
 
+    max_len = max(train_data_filter, key=lambda x: len(x))
+    print('max =', max_len)
+    print('max len=', len(max_len))
+
     #assert len(train_data_filter) == len(train_targets), "number of targets differ number of tweets"
     #assert len(train_data_filter[0]) == actual_pad, "actual_pad isn't respected on first element"
     print("num data ", len(train_data_filter))
     print("num targets ", len(train_targets_filter))
+    
     with open(oname, "w") as o:
         for i in range(len(train_data_filter)):
+            print(len(train_data_filter[i]))
             o.write(train_targets_filter[i]+"\t"+" ".join(train_data_filter[i])+"\n")
 
     return train_data_filter, train_targets_filter, actual_pad
 
 
 def find_emoticons(sentence):
-    smile_emoticons_str = r"""(?:[:=;][oO\-]?[D\)\]])"""
-    sad_emoticons_str = r"""(?:[:=;][oO\-']?[\(\[\|])"""
-    funny_emoticons_str = r"""(?:[:=;@][oO\-]?[Oo0pP])"""
-    sentence = re.sub(smile_emoticons_str, "<smile>", sentence)
-    sentence = re.sub(sad_emoticons_str, "<sad>", sentence)
-    sentence = re.sub(funny_emoticons_str, "<funny>", sentence)
+    # smile_emoticons_str = r"""(?:[:=;][oO\-]?[D\)\]])"""
+    # sad_emoticons_str = r"""(?:[:=;][oO\-']?[\(\[\|])"""
+    # funny_emoticons_str = r"""(?:[:=;@][oO\-]?[Oo0pP])"""
+    sentence = smile_re.sub("<smile>", sentence)
+    sentence = sad_re.sub("<sad>", sentence)
+    sentence = funny_re.sub("<funny>", sentence)
 
     return sentence
 

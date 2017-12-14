@@ -102,6 +102,8 @@ def read_data(fname):
 
     tweet_len = len(train_data[-1])
     
+    print('Dataset size:', len(train_data))
+    
     return train_data, train_targets, tweet_len
 
 
