@@ -10,28 +10,52 @@ class CNN(nn.Module):
     def __init__(self, emb_size, pad_len, batch_size, classes, vocab_size):
         super(CNN, self).__init__()
         
+        self.filters_sizes = [2, 4, 6]
+        self.channels = 10
+        
+        
         self.batch_size = batch_size
         self.emb_size = emb_size
         self.pad_len = pad_len
         self.classes = classes
         self.vocab_size = vocab_size
-        self.window = 3
-        self.channels = 16
-        self.encoder = nn.Embedding(self.vocab_size, self.emb_size)
+        
+        
+        self.encoder = nn.Embedding(self.vocab_size, self.emb_size, padding_idx=0)
+        
+        self.conv_layers = []
+        
+        for i, filter in enumerate(self.filters_sizes):
+            self.conv_layers.append(
+                nn.Sequential(
+                    nn.Conv2d(1, self.channels, kernel_size=(self.emb_size, filter), padding=0),
+                    nn.ReLU(),
+                    nn.MaxPool2d((1, self.pad_len -filter +1))
+                )
+            )
 
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, self.channels, kernel_size=(self.emb_size, self.window), padding=1),
-            #nn.BatchNorm2d(self.channels),
-            nn.ReLU(),
-            nn.MaxPool2d(2))
-
-        self.fc = nn.Linear(self.channels*int(self.pad_len/2), self.classes)
+        self.do = nn.Dropout(0.5)
+        
+        self.fc = nn.Linear(self.channels*len(self.filters_sizes), self.classes)
+        
         self.sm = nn.LogSoftmax()
 
     def forward(self, x):
         x = self.encoder(x).view((self.batch_size, 1, self.emb_size, -1))
-        out = self.layer1(x)
-        out = out.view(out.size(0), -1)
+        
+        features = []
+        
+        for i, conv in enumerate(self.conv_layers):
+            c = conv(x)
+            features.append(c.view(c.size(0), -1))
+        
+            
+        out = torch.cat(features, dim=1)
+        
+        #out = out.view(out.size(0), -1)
+        
+        out = self.do(out)
+        
         out = self.fc(out)
 
         out = self.sm(out)

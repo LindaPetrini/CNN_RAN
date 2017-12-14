@@ -36,7 +36,7 @@ class Corpus(object):
         self.n_classes = n_classes
         self.data, self.target, self.length, self.tweet_len, self.train_weights = self.tokenize_single(path)
     
-    def tokenize_single(self, path, lim=float('+inf')):
+    def tokenize_single(self, path, lim=100): #float('+inf')):
         assert os.path.exists(path)
         
         random.seed(1234)

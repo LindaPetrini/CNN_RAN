@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import os.path
 
 parser = argparse.ArgumentParser(description='CNN')
-parser.add_argument('--initial', type=str, choices=["google", "prev"], default=None,
-                    help='choose initialisation(prev, google')
+parser.add_argument('--initial', type=str, default=None,
+                    help='choose initialisation(google, path_to_file, None = random)')
 parser.add_argument('--epochs', type=int, default=10,
                     help='number of epochs')
 parser.add_argument('--lr', type=float, default=0.001,
@@ -103,10 +103,13 @@ lossCriterion = nn.NLLLoss()
 if args.cuda:
     cnn.cuda()
 
-# if args.initial == "google":
-#     cnn.init_emb(corpus.dictionary.word2idx)
-# else:
-#     cnn.init_from_txt("trained_emb.txt", corpus.dictionary.word2idx)
+if args.initial == "google":
+    cnn.init_emb(corpus.dictionary.word2idx)
+elif args.initial is not None:
+    if os.path.exists(args.initial):
+        cnn.init_from_txt(args.initial, corpus.dictionary.word2idx)
+    else:
+        raise FileNotFoundError("File {} doesn't exist".format(args.initial))
 
 
 
