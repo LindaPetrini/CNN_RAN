@@ -31,7 +31,7 @@ class CNN(nn.Module):
                     nn.Conv2d(1, self.channels, kernel_size=(self.emb_size, filter), padding=0),
                     nn.ReLU(),
                     nn.MaxPool2d((1, self.pad_len -filter +1))
-                )
+                ).cuda()
             )
 
         self.do = nn.Dropout(0.5)
@@ -103,14 +103,14 @@ class CNN(nn.Module):
         return emb_mat
     
 
-    def encode_words(self, sentence, word2ind, is_cuda=False):
+    def encode_words(self, sentence, word2ind, is_cuda=True):
         inp = np.asarray([word2ind[word] for word in sentence])
         inp = Variable(torch.cuda.LongTensor(inp.tolist())) if is_cuda else Variable(torch.LongTensor(inp))
         return inp
 
     def emb_to_txt(self, oname: str, word2ind: dict):
     
-        embeddings = self.encoder.weight.data.numpy()
+        embeddings = self.encoder.weight.data.cpu().numpy()
         with open(oname, "w") as o:
             o.write("#word\tembedding\n")
             for word in word2ind.keys():

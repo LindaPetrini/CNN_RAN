@@ -251,7 +251,9 @@ try:
         print('| epoch {:2d}| train loss: {:4f} | ms/btc {:4.2f}| '.format(epoch, loss, elapsed * 1000 / args.log_interval))
         if args.plot:
             plotter(train_confusion, epoch)
-        
+
+        if args.save:
+        	cnn.emb_to_txt(args.save+str(epoch), corpus.dictionary.word2idx)
         
 
 except KeyboardInterrupt:
@@ -275,5 +277,4 @@ if args.plot:
                 '.png'
                 )
 
-if args.save:
-    cnn.emb_to_txt(args.save, corpus.dictionary.word2idx)
+    

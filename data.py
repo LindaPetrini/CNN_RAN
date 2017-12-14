@@ -30,13 +30,13 @@ class Dictionary(object):
 
 
 class Corpus(object):
-    def __init__(self, path, n_classes=2):
+    def __init__(self, path, n_classes=2, lim=float('+inf')):
         self.dictionary = Dictionary()
         self.dictionary.add_word("<pad>")
         self.n_classes = n_classes
-        self.data, self.target, self.length, self.tweet_len, self.train_weights = self.tokenize_single(path)
+        self.data, self.target, self.length, self.tweet_len, self.train_weights = self.tokenize_single(path, lim)
     
-    def tokenize_single(self, path, lim=100): #float('+inf')):
+    def tokenize_single(self, path, lim=float('+inf')):
         assert os.path.exists(path)
         
         random.seed(1234)
@@ -63,8 +63,8 @@ class Corpus(object):
         tweet_len = max_length
         
         with open(path, 'r') as f:
-            ids = torch.LongTensor(tokens)
-            targets = torch.FloatTensor(tokens, self.n_classes)
+            ids = torch.cuda.LongTensor(tokens)
+            targets = torch.cuda.FloatTensor(tokens, self.n_classes)
             token = 0
             for i, line in enumerate(f):
                 if i+1 > lim:
@@ -93,8 +93,8 @@ class Corpus(object):
         idx = np.arange(self.length)
         np.random.seed(epoch)
         np.random.shuffle(idx)
-        new_train = torch.LongTensor(self.length * self.tweet_len)
-        new_train_t = torch.FloatTensor(self.length * self.tweet_len, self.n_classes)
+        new_train = torch.cuda.LongTensor(self.length * self.tweet_len)
+        new_train_t = torch.cuda.FloatTensor(self.length * self.tweet_len, self.n_classes)
         for i in range(self.length):
             for n in range(l):
                 new_train[l * i + n] = self.data[l * idx[i] + n]
