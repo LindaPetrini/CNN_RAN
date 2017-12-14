@@ -36,6 +36,7 @@ parser.add_argument('--pause_value', type=int, default=0,
                     help='not optimise embeddings for the first 5 epochs')
 parser.add_argument('--log_interval', type=int, default=50, metavar='N',
                     help='report interval')
+parser.add_argument('--lim', type=int, default=float('+inf'), help='set maximum number of datapoints to use')
 
 
 args = parser.parse_args()
@@ -76,7 +77,7 @@ if torch.cuda.is_available():
 print("Reading data...")
 #train_data, train_targets, pad_len = read_data(args.dataset)
 
-corpus = data.Corpus(args.dataset)
+corpus = data.Corpus(args.dataset, cuda=args.cuda, lim=args.lim)
 
 #train_data, train_targets, pad_len = corpus.data, corpus.target, corpus.tweet_len
 # print("\nnumber train data: ", len(train_data))
@@ -102,6 +103,11 @@ lossCriterion = nn.NLLLoss()
 
 if args.cuda:
     cnn.cuda()
+
+if args.save:
+    dir = os.path.dirname(args.save)
+    if not os.path.exists(dir):
+        os.mkdir(dir)
 
 if args.initial == "google":
     cnn.init_emb(corpus.dictionary.word2idx)
@@ -187,7 +193,7 @@ def train():
             total_loss = 0
             start_time = time.time()
         
-        confusion_matrix(output[-1], targets[-1], train_confusion, corpus.n_classes)
+        confusion_matrix(output, targets, train_confusion, corpus.n_classes)
     
     return epoch_loss
 
@@ -198,7 +204,8 @@ def plotter(conf_arr, epoch=0):
     ax.set_aspect(1)
     res = ax.imshow(np.array(conf_arr), cmap=plt.cm.jet,
                     interpolation='nearest')
-
+    
+    print(conf_arr)
     width, height = conf_arr.shape
 
     for x in range(width):
@@ -208,7 +215,7 @@ def plotter(conf_arr, epoch=0):
                         verticalalignment='center')
 
     cb = fig.colorbar(res)
-    alphabet = ["negative", "neutral", "positive"]
+    alphabet = ["negative", "positive"]
     plt.xticks(range(width), alphabet[:width])
     plt.yticks(range(height), alphabet[:height])
     if not os.path.exists(path):
@@ -220,10 +227,13 @@ def plotter(conf_arr, epoch=0):
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     exec_time = time.time()
-    path = "./confusion_matrixes/" + "_lr" + str(
-        args.lr) + "_btchsize_" + str(args.batch_size) + "_" + str(exec_time)[-3:] + (
-               "_pause" if args.pause else "") + "_" + args.initial + (
-               "_shuffle/" if args.shuffle else "/")  # str(exec_time)
+    path = "./confusion_matrixes/" +\
+           "_lr" + str(args.lr) +\
+           "_batchsize_" + str(args.batch_size) +\
+           "_" + str(exec_time)[-3:] +\
+           ("_pause" if args.pause else "") + \
+           ("_google" if args.initial == 'google' else "prev" if args.initial else "") + \
+           ("_shuffle/" if args.shuffle else "/")
     
     begin_time = time.time()
     
@@ -253,7 +263,8 @@ try:
             plotter(train_confusion, epoch)
 
         if args.save:
-        	cnn.emb_to_txt(args.save+str(epoch), corpus.dictionary.word2idx)
+            name, ext = os.path.splitext(args.save)
+            cnn.emb_to_txt(name+str(epoch)+ext, corpus.dictionary.word2idx)
         
 
 except KeyboardInterrupt:
@@ -264,6 +275,7 @@ end_time = time.time()
 
 print('Total Execution Time:', end_time - begin_time)
 
+print(train_confusion)
 if args.plot:
     plt.plot(range(args.epochs), losses)
     plt.savefig(
@@ -272,9 +284,10 @@ if args.plot:
                 "_btchsize_" + str(args.batch_size) +
                 "_" + str(exec_time)[-3:] +
                 ("_pause" if args.pause else "") +
-                "_" + args.initial +
+                ("_google" if args.initial == 'google' else "prev" if args.initial else "") + \
                 ("_shuffle" if args.shuffle else "") +
                 '.png'
                 )
 
-    
+if args.save:
+    cnn.emb_to_txt(args.save, corpus.dictionary.word2idx)

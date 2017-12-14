@@ -10,7 +10,7 @@ class CNN(nn.Module):
     def __init__(self, emb_size, pad_len, batch_size, classes, vocab_size):
         super(CNN, self).__init__()
         
-        self.filters_sizes = [2, 4, 6]
+        self.filters_sizes = [3, 4, 5]
         self.channels = 10
         
         
@@ -23,16 +23,18 @@ class CNN(nn.Module):
         
         self.encoder = nn.Embedding(self.vocab_size, self.emb_size, padding_idx=0)
         
-        self.conv_layers = []
         
+        conv_layers = []
         for i, filter in enumerate(self.filters_sizes):
-            self.conv_layers.append(
+            conv_layers.append(
                 nn.Sequential(
                     nn.Conv2d(1, self.channels, kernel_size=(self.emb_size, filter), padding=0),
                     nn.ReLU(),
                     nn.MaxPool2d((1, self.pad_len -filter +1))
-                ).cuda()
+                )
             )
+
+        self.conv_layers = nn.ModuleList(conv_layers)
 
         self.do = nn.Dropout(0.5)
         
@@ -45,7 +47,7 @@ class CNN(nn.Module):
         
         features = []
         
-        for i, conv in enumerate(self.conv_layers):
+        for conv in self.conv_layers:
             c = conv(x)
             features.append(c.view(c.size(0), -1))
         
