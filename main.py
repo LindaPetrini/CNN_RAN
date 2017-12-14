@@ -179,8 +179,10 @@ def train():
         
         optimizer.step()
 
-        total_loss += sum(loss.data)
-        epoch_loss += sum(loss.data)
+        total_loss += loss.data[0]
+        epoch_loss += loss.data[0]
+
+        confusion_matrix(output, targets, train_confusion, corpus.n_classes)
         
         if batch % args.log_interval == 0:
             cur_loss = total_loss / args.log_interval
@@ -193,7 +195,7 @@ def train():
             total_loss = 0
             start_time = time.time()
         
-        confusion_matrix(output, targets, train_confusion, corpus.n_classes)
+        
     
     return epoch_loss
 

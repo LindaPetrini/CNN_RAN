@@ -30,7 +30,7 @@ class Dictionary(object):
 
 
 class Corpus(object):
-    def __init__(self, path, n_classes=2, cuda=True, lim=float('+inf')):
+    def __init__(self, path, n_classes=2, cuda=True, lim=None):
         self.dictionary = Dictionary()
         self.dictionary.add_word("<pad>")
         self.n_classes = n_classes
@@ -41,20 +41,35 @@ class Corpus(object):
     
         
         
-    def tokenize_single(self, path, lim=float('+inf')):
+    def tokenize_single(self, path, lim=None):
         assert os.path.exists(path)
         
+        if lim is not None:
+            lim = lim //self.n_classes
+            counter = [0]*self.n_classes
+        
         random.seed(1234)
+        
+        classes_counter = {c : 0 for c in range(self.n_classes)}
         
         max_length = 0
         with open(path, 'r') as f:
             tokens = 0
             tweet_amount = 0
             for i, line in enumerate(f):
-                if i+1 > lim:
-                    break
-                    
                 target, sentence = line.strip().split(None, 1)
+                
+                classes_counter[int(target)] += 1
+                
+                if lim is not None:
+                    if all([counter[c] >= lim for c in range(self.n_classes)]):
+                        break
+    
+                    elif counter[int(target)] >= lim:
+                        continue
+                    else:
+                        counter[int(target)] += 1
+                
                 words = sentence.split()
                 tokens += len(words)
                 if len(words) > max_length:
@@ -64,7 +79,11 @@ class Corpus(object):
                 for word in words:
                     self.dictionary.add_word(word)
         
+        print("Until now I've read for each class:", classes_counter)
         
+        if lim is not None:
+            counter = [0]*self.n_classes
+            
         tweet_len = max_length
         
         with open(path, 'r') as f:
@@ -72,13 +91,20 @@ class Corpus(object):
             targets = torch.FloatTensor(tokens, self.n_classes)
             token = 0
             for i, line in enumerate(f):
-                if i+1 > lim:
-                    break
                     
                 target, sentence = line.strip().split(None, 1)
                 words = sentence.split()
                 this_target, _ = targetToFloat(target, self.n_classes)
                 
+                if lim is not None:
+                    if all([counter[c] >= lim for c in range(self.n_classes)]):
+                        break
+                        
+                    elif counter[int(target)] >= lim:
+                        continue
+                    else:
+                        counter[int(target)] += 1
+
                 for word in words:
                     ids[token] = self.dictionary.word2idx[word]
                     
