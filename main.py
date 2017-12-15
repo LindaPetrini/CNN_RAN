@@ -18,7 +18,7 @@ parser.add_argument('--lr', type=float, default=0.001,
                     help='learning rate')
 parser.add_argument('--plot', action='store_true',
                     help='plot loss')
-parser.add_argument('--save', type=str, default='trained_emb.txt',
+parser.add_argument('--save', type=str, default='./embeddings/'+str(time.time())+'/trained_emb.txt',
                     help='path to save the final model')
 parser.add_argument('--dataset', type=str, default='./datasets/preprocessed.txt',
                     help='path to the dataset')
@@ -28,13 +28,13 @@ parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
 parser.add_argument('--shuffle', action='store_true',
                     help='shuffle train data every epoch')
-parser.add_argument('--batch_size', type=int, default=20, metavar='N',
+parser.add_argument('--batch_size', type=int, default=200, metavar='N',
                     help='batch size')
 parser.add_argument('--pause', action='store_true',
                     help='not optimise embeddings for the first 5 epochs')
 parser.add_argument('--pause_value', type=int, default=0,
                     help='not optimise embeddings for the first 5 epochs')
-parser.add_argument('--log_interval', type=int, default=50, metavar='N',
+parser.add_argument('--log_interval', type=int, default=100, metavar='N',
                     help='report interval')
 parser.add_argument('--lim', type=int, default=float('+inf'), help='set maximum number of datapoints to use')
 
@@ -107,7 +107,7 @@ if args.cuda:
 if args.save:
     dir = os.path.dirname(args.save)
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir)
 
 if args.initial == "google":
     cnn.init_emb(corpus.dictionary.word2idx)
@@ -185,8 +185,8 @@ def train():
         confusion_matrix(output, targets, train_confusion, corpus.n_classes)
         
         if batch % args.log_interval == 0:
-            cur_loss = total_loss / args.log_interval
-            cur_recall = recallFitness(train_confusion, corpus.n_classes) / args.log_interval
+            cur_loss = total_loss# / args.log_interval
+            cur_recall = recallFitness(train_confusion, corpus.n_classes) #/ args.log_interval
             elapsed = time.time() - start_time
             print('| epoch {:2d}| {:3d}/{:3d}| ms/btc {:4.2f}| '
                   'loss {:5.2f} | Rec {:3.4f} '.format(
@@ -197,7 +197,7 @@ def train():
         
         
     
-    return epoch_loss
+    return epoch_loss * args.batch_size / train_data.size(0)
 
 def plotter(conf_arr, epoch=0):
     fig = plt.figure()
@@ -207,7 +207,7 @@ def plotter(conf_arr, epoch=0):
     res = ax.imshow(np.array(conf_arr), cmap=plt.cm.jet,
                     interpolation='nearest')
     
-    print(conf_arr)
+    # print(conf_arr)
     width, height = conf_arr.shape
 
     for x in range(width):
@@ -246,13 +246,13 @@ try:
             if epoch > args.pause_value:
                 cnn.encoder.weight.requires_grad = True
                 optimizer = torch.optim.Adagrad(cnn.parameters(), lr=args.lr)
+        epoch_start_time = time.time()
         
         if args.shuffle:
             # print("...shuffling")
             train_data, train_data_t = batchifier.shuffle_data(corpus, epoch, args.batch_size, corpus.n_classes, args.cuda)
             # print("...shuffled!")
         
-        epoch_start_time = time.time()
         train_confusion = np.reshape([[0 for i in range(classes)] for j in range(classes)], (classes, classes))
         loss = train()
         
@@ -260,7 +260,7 @@ try:
 
         elapsed = time.time() - epoch_start_time
         
-        print('| epoch {:2d}| train loss: {:4f} | ms/btc {:4.2f}| '.format(epoch, loss, elapsed * 1000 / args.log_interval))
+        print('| epoch {:2d}| train loss: {:4f} | s {:3.3f}| '.format(epoch, loss, elapsed))
         if args.plot:
             plotter(train_confusion, epoch)
 
@@ -279,9 +279,10 @@ print('Total Execution Time:', end_time - begin_time)
 
 print(train_confusion)
 if args.plot:
-    plt.plot(range(args.epochs), losses)
+    plt.plot(range(len(losses)), losses)
     plt.savefig(
-                "losstrend" +
+                os.path.dirname(args.save)+
+                "_losstrend" +
                 "_lr" + str(args.lr) +
                 "_btchsize_" + str(args.batch_size) +
                 "_" + str(exec_time)[-3:] +
