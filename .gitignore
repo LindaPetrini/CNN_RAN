@@ -1,5 +1,13 @@
 .idea/
 GoogleNews-vectors-negative300.bin
 GoogleNews-vectors-negative300.txt
-2017_English_final/
+.git/
 __pycache__/
+datasets/*.csv
+datasets/*.bin
+datasets/*.txt
+confusion_matrixes
+*.png
+results
+2017_English_final/
+embeddings/
