@@ -226,6 +226,7 @@ def plotter(conf_arr, epoch=0):
     plt.close()
     return
 
+print("START TRAINING")
 # At any point you can hit Ctrl + C to break out of training early.
 try:
     exec_time = time.time()
@@ -248,9 +249,9 @@ try:
                 optimizer = torch.optim.Adagrad(cnn.parameters(), lr=args.lr)
         epoch_start_time = time.time()
         
-        if args.shuffle:
+        #if args.shuffle:
             # print("...shuffling")
-            train_data, train_data_t = batchifier.shuffle_data(corpus, epoch, args.batch_size, corpus.n_classes, args.cuda)
+            #train_data, train_data_t = batchifier.shuffle_data(corpus, epoch, args.batch_size, corpus.n_classes, args.cuda)
             # print("...shuffled!")
         
         train_confusion = np.reshape([[0 for i in range(classes)] for j in range(classes)], (classes, classes))
